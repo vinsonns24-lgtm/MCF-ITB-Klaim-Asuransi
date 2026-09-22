@@ -1,0 +1,8 @@
+# Data kompetisi tidak boleh disebarkan ulang. Unduh dari halaman kompetisi di Kaggle.
+data/
+
+venv/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
