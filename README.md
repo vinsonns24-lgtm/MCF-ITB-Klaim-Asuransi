@@ -72,4 +72,11 @@ jupyter notebook notebooks
 - Bulan klaim diasumsikan dihitung dari tanggal pasien masuk RS. Kalau panitia memakai tanggal lain, skor resmi bisa berbeda dari hasil backtest.
 - Model faktor klaim menunjukkan hubungan, bukan sebab-akibat. Tingkat keparahan penyakit dan tindakan medis tidak ada di data.
 
+## Pelajaran dari proyek ini
+
+- Dengan deret sependek 19 bulan, metode sederhana yang dipilih lewat backtest lebih bisa dipercaya daripada model yang mengejar tren.
+- Pahami metrik penilaiannya. MAPE menghukum prediksi yang terlalu tinggi lebih berat, sehingga prediksi yang sedikit diturunkan memberi skor lebih baik. Faktor itu tetap harus dipilih dengan hati-hati, karena 0,95 dan 0,97 sama baiknya di backtest yang sama.
+- Definisi waktu menentukan hasil. Menghitung klaim per tanggal pembayaran membuat deret terlihat turun di akhir periode, padahal yang berubah hanya batas data.
+- Angka ringkasan perlu dibaca teliti. Porsi 18% ternyata hanya bagian klaim raksasa di atas Rp634 juta, sedangkan nilai penuhnya mencapai 36% di bulan terburuk. Pengaruh plan yang kecil di model juga tidak sama dengan plan yang tidak berpengaruh sama sekali.
+
 Teknologi: Python, pandas, statsmodels, scikit-learn, LightGBM, SHAP, matplotlib.
