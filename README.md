@@ -23,14 +23,14 @@ Sepuluh metode dibandingkan dengan *rolling-origin backtest*: dari setiap bulan 
 
 Metode yang menangkap tren justru lebih buruk. Jumlah nasabah tidak bertambah dan deretnya hanya 19 bulan, jadi "tren" yang ditangkap lebih banyak berupa kebetulan. Faktor 0,95 dipakai karena MAPE menghukum prediksi yang terlalu tinggi lebih berat daripada yang terlalu rendah. Faktor ini memperbaiki ketiga target sekaligus.
 
-Prediksi final: sekitar **225 klaim per bulan**, severity **Rp54,5 juta**, dan total **Rp12,9 miliar** per bulan.
+Prediksi final: sekitar **225 klaim per bulan**, severity **Rp54,5 juta**, dan total **Rp12,9 miliar** per bulan. Ketiga target diprediksi dan dinilai terpisah, jadi 225 × Rp54,5 juta (Rp12,3 miliar) tidak sama persis dengan prediksi total.
 
 ### Faktor penentu nilai klaim
 
 Model LightGBM untuk nilai per klaim (skala log), divalidasi dengan GroupKFold per nomor polis, menjelaskan sekitar separuh variasi nilai klaim (R² 0,50, dibanding 0,15 untuk patokan rata-rata per jenis perawatan). Urutan faktor menurut SHAP:
 
 1. **Lama rawat.** Median klaim tanpa menginap Rp2,9 juta, rawat lebih dari 10 hari Rp199 juta.
-2. **Lokasi rumah sakit.** Singapura hanya 22% jumlah klaim tetapi 50% total nilai. Median klaim di Singapura Rp53 juta, di Indonesia Rp9 juta. Setelah lokasi RS diketahui, jenis plan hampir tidak menambah informasi.
+2. **Lokasi rumah sakit.** Singapura hanya 22% jumlah klaim tetapi 50% total nilai. Median klaim di Singapura Rp53 juta, di Indonesia Rp9 juta. Plan dan lokasi saling terkait: semua klaim plan M-003 terjadi di Indonesia, sedangkan separuh klaim plan M-001 di Singapura. Di model, pengaruh plan kecil setelah lokasi RS diketahui.
 3. **Diagnosis.** Kanker (bab ICD C, 30%), jantung dan pembuluh darah (bab I, 16%), serta otot dan tulang (bab M, 12%) menyumbang 58% total klaim.
 4. **Jenis perawatan** dan **cara klaim** (cashless atau reimburse).
 
@@ -40,7 +40,7 @@ Usia, plan, domisili, dan gender pengaruhnya kecil.
 
 - **Bulan klaim dihitung dari tanggal pasien masuk RS.** Klaim rata-rata dibayar dua bulan setelah pasien pulang, sehingga deret per tanggal bayar terlihat rendah di awal 2024 dan anjlok di akhir 2025 karena batas periode data, bukan karena jumlah klaim berubah.
 - **Jumlah nasabah tetap.** Semua polis mulai berlaku antara 2011 dan 2018.
-- **Klaim raksasa menggeser severity bulanan.** Median klaim Rp14 juta, tetapi 1% klaim terbesar bernilai di atas Rp634 juta dan bisa menyumbang sampai 18% total satu bulan. Sembilan dari sepuluh klaim terbesar adalah rawat inap di luar Indonesia.
+- **Klaim raksasa menggeser severity bulanan.** Median klaim Rp14,5 juta, tetapi 1% klaim terbesar (47 klaim) bernilai di atas Rp634 juta. Ke-47 klaim ini menyumbang 18,5% seluruh nilai klaim, dan di Februari 2025 sampai 36% total bulan itu. Sembilan dari sepuluh klaim terbesar adalah rawat inap di luar Indonesia.
 - **Klaim terpusat.** Hanya 30% polis yang pernah klaim, dan sepuluh polis menyumbang 18% seluruh klaim.
 
 ## Isi repo
@@ -68,7 +68,7 @@ jupyter notebook notebooks
 ## Keterbatasan
 
 - Hanya 19 bulan data, sehingga pola musiman tahunan tidak bisa diuji.
-- Faktor koreksi 0,95 dipilih dari backtest yang sama dengan pemilihan metode. Nilainya sengaja dibatasi di kelipatan 0,05 supaya tidak terlalu menyesuaikan diri dengan 9 titik backtest.
+- Faktor koreksi 0,95 dipilih dari backtest yang sama dengan pemilihan metode. Nilainya sengaja dibatasi di kelipatan 0,05 supaya tidak terlalu menyesuaikan diri dengan 9 titik backtest. Faktor 0,97 memberi skor gabungan yang sama (9,9%).
 - Bulan klaim diasumsikan dihitung dari tanggal pasien masuk RS. Kalau panitia memakai tanggal lain, skor resmi bisa berbeda dari hasil backtest.
 - Model faktor klaim menunjukkan hubungan, bukan sebab-akibat. Tingkat keparahan penyakit dan tindakan medis tidak ada di data.
 
