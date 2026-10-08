@@ -1,0 +1,104 @@
+// Measure DAX untuk dashboard klaim. Buat satu per satu lewat New measure, lalu salin bagian
+// setelah tanda "=" (termasuk nama di depannya). Urutannya penting: measure di bawah memakai
+// measure di atasnya.
+//
+// Syarat: relasi antartabel sudah dibuat dan dim_tanggal sudah ditandai sebagai Date Table
+// (lihat PANDUAN.md langkah 5). Tanpa itu, measure perbandingan waktu memberi hasil salah.
+
+
+// ------------------------------------------------------------------ dasar
+
+Jumlah Klaim = COUNTROWS ( fakta_klaim )
+
+Total Klaim = SUM ( fakta_klaim[nilai_disetujui] )
+
+Severity = DIVIDE ( [Total Klaim], [Jumlah Klaim] )
+
+Total Biaya RS = SUM ( fakta_klaim[biaya_rs] )
+
+// Berapa persen tagihan rumah sakit yang benar-benar dibayar perusahaan.
+Rasio Persetujuan = DIVIDE ( [Total Klaim], [Total Biaya RS] )
+
+Polis Pernah Klaim = DISTINCTCOUNT ( fakta_klaim[nomor_polis] )
+
+
+// ------------------------------------------------------------------ perbandingan waktu
+
+Total Klaim Bulan Lalu =
+CALCULATE ( [Total Klaim], DATEADD ( dim_tanggal[tanggal], -1, MONTH ) )
+
+Perubahan vs Bulan Lalu =
+DIVIDE ( [Total Klaim] - [Total Klaim Bulan Lalu], [Total Klaim Bulan Lalu] )
+
+
+// ------------------------------------------------------------------ metode forecasting proyek
+// Metode final notebook 02 ditulis ulang di DAX: rata-rata total klaim 6 bulan terakhir, dikali 0,95.
+// Akhir periode diambil dari tanggal klaim terakhir dalam konteks, bukan 31 Desember 2025, karena
+// dim_tanggal mencakup bulan-bulan sesudah Juli 2025 yang belum punya klaim.
+
+Rata-rata 6 Bulan =
+VAR AkhirPeriode = EOMONTH ( MAX ( fakta_klaim[tanggal_masuk] ), 0 )
+RETURN
+    DIVIDE (
+        CALCULATE ( [Total Klaim], DATESINPERIOD ( dim_tanggal[tanggal], AkhirPeriode, -6, MONTH ) ),
+        6
+    )
+
+Prediksi Kompetisi = [Rata-rata 6 Bulan] * 0.95
+
+
+// ------------------------------------------------------------------ lokasi
+
+Total Klaim Luar Negeri =
+CALCULATE ( [Total Klaim], dim_lokasi[kelompok] = "Luar negeri" )
+
+Porsi Luar Negeri = DIVIDE ( [Total Klaim Luar Negeri], [Total Klaim] )
+
+
+// ------------------------------------------------------------------ audit
+
+Klaim Ditandai = CALCULATE ( [Jumlah Klaim], fakta_klaim[jumlah_penanda] >= 1 )
+
+Nilai Klaim Ditandai = CALCULATE ( [Total Klaim], fakta_klaim[jumlah_penanda] >= 1 )
+
+Klaim Prioritas Audit = CALCULATE ( [Jumlah Klaim], fakta_klaim[jumlah_penanda] >= 2 )
+
+Aturan A Melebihi Biaya RS = SUM ( fakta_klaim[a_disetujui_melebihi_biaya_rs] )
+
+Aturan B Klaim Kembar = SUM ( fakta_klaim[b_klaim_kembar] )
+
+Aturan C Lokasi Tidak Spesifik = SUM ( fakta_klaim[c_lokasi_tidak_spesifik] )
+
+Aturan D Rawat Jalan Menginap = SUM ( fakta_klaim[d_rawat_jalan_menginap] )
+
+Aturan E Nilai Tak Wajar = SUM ( fakta_klaim[e_nilai_tak_wajar] )
+
+Aturan F Tanpa Tanggal Bayar = SUM ( fakta_klaim[f_dibayar_tanpa_tanggal] )
+
+
+// ------------------------------------------------------------------ prediksi dan IBNR
+// Dua tabel ini berdiri sendiri (tidak direlasikan). Sumbu grafiknya memakai kolom awal_bulan
+// dari tabel masing-masing.
+
+Aktual Total =
+CALCULATE ( SUM ( prediksi_bulanan[aktual] ), prediksi_bulanan[target] = "Total klaim" )
+
+Prediksi Total =
+CALCULATE ( SUM ( prediksi_bulanan[prediksi] ), prediksi_bulanan[target] = "Total klaim" )
+
+Batas Bawah Total =
+CALCULATE ( SUM ( prediksi_bulanan[batas_bawah] ), prediksi_bulanan[target] = "Total klaim" )
+
+Batas Atas Total =
+CALCULATE ( SUM ( prediksi_bulanan[batas_atas] ), prediksi_bulanan[target] = "Total klaim" )
+
+IBNR Bornhuetter-Ferguson = SUMX ( ibnr, ibnr[ultimate_BF] - ibnr[dibayar] )
+
+IBNR Chain-Ladder = SUMX ( ibnr, ibnr[ultimate_CL] - ibnr[dibayar] )
+
+
+// ------------------------------------------------------------------ premi murni
+
+Premi Murni Rata-rata = AVERAGE ( dim_polis[premi_murni_tahunan] )
+
+Jumlah Polis = COUNTROWS ( dim_polis )

@@ -20,10 +20,12 @@ TARGET = ["Claim_Frequency", "Claim_Severity", "Total_Claim"]
 def muat_klaim() -> pd.DataFrame:
     """Data klaim dengan kolom tanggal sudah diubah menjadi datetime.
 
-    Bulan klaim diambil dari tanggal pasien masuk RS (tanggal kejadian). Tanggal pembayaran
-    tidak dipakai karena pembayaran rata-rata keluar dua bulan setelah pasien pulang: deret per
-    tanggal bayar terlihat rendah di awal 2024 (klaim dari 2023 tidak ada di data) dan anjlok di
-    akhir 2025 (klaim belum dibayar), padahal jumlah kejadiannya tidak berubah.
+    Bulan klaim diambil dari tanggal pasien masuk RS (tanggal kejadian). Data dipotong menurut
+    tanggal ini: semua klaim masuk RS antara 1 Januari 2024 dan 31 Juli 2025. Tanggal pembayaran
+    tidak dipakai karena pembayaran rata-rata keluar dua bulan setelah pasien pulang, sehingga deret
+    per tanggal bayar terlihat rendah di awal 2024 (klaim yang masuk RS di 2023 tidak ada di data)
+    dan anjlok di akhir 2025 (tidak ada klaim yang masuk RS setelah Juli 2025), padahal jumlah
+    kejadiannya tidak berubah.
     """
     k = pd.read_csv(DATA / "Data_Klaim.csv")
     for kolom in ["Tanggal Pembayaran Klaim", "Tanggal Pasien Masuk RS", "Tanggal Pasien Keluar RS"]:
@@ -44,6 +46,18 @@ def per_bulan(k: pd.DataFrame) -> pd.DataFrame:
     g = k.groupby("bulan").agg(Claim_Frequency=(NILAI, "size"), Total_Claim=(NILAI, "sum"))
     g["Claim_Severity"] = g["Total_Claim"] / g["Claim_Frequency"]
     return g[TARGET]
+
+
+# ---------------------------------------------------------------- format angka
+
+def angka_id(x, digit=1) -> str:
+    """Angka gaya Indonesia: titik untuk ribuan, koma untuk desimal (1234.5 menjadi '1.234,5')."""
+    return f"{x:,.{digit}f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
+def persen_id(x, digit=1) -> str:
+    """Proporsi (0 sampai 1) sebagai persen gaya Indonesia (0.185 menjadi '18,5%')."""
+    return angka_id(x * 100, digit) + "%"
 
 
 # ---------------------------------------------------------------- metrik
@@ -92,8 +106,8 @@ def holt_teredam(y, h):
 
 
 def dikali(fungsi, faktor):
-    """Prediksi dikalikan faktor. Faktor < 1 dipakai karena MAPE menghukum prediksi yang
-    terlalu tinggi lebih berat daripada yang terlalu rendah."""
+    """Prediksi dikalikan faktor. Faktor < 1 dipakai karena MAPE membagi error dengan nilai aktual,
+    sehingga prediksi terbaik menurut MAPE cenderung sedikit di bawah rata-rata."""
     def f(y, h):
         return faktor * fungsi(y, h)
     return f

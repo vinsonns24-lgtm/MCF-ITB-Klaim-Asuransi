@@ -1,6 +1,9 @@
 # Data kompetisi tidak boleh disebarkan ulang. Unduh dari halaman kompetisi di Kaggle.
 data/
 
+# File Power BI menyimpan salinan data kompetisi di dalamnya.
+*.pbix
+
 venv/
 __pycache__/
 .ipynb_checkpoints/
